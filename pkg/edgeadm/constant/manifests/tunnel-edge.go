@@ -39,19 +39,19 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: tunnel-edge
-    namespace: kube-system
+    namespace: {{.Namespace}}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: tunnel-edge
-  namespace: kube-system
+  namespace: {{.Namespace}}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: tunnel-edge-conf
-  namespace: kube-system
+  namespace: {{.Namespace}}
 data:
   mode.toml: |
     [mode]
@@ -75,14 +75,14 @@ data:
 kind: Secret
 metadata:
   name: tunnel-edge-cert
-  namespace: kube-system
+  namespace: {{.Namespace}}
 type: Opaque
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: tunnel-edge
-  namespace: kube-system
+  namespace: {{.Namespace}}
 spec:
   selector:
     matchLabels:
@@ -93,9 +93,11 @@ spec:
         app: tunnel-edge
     spec:
       hostNetwork: true
+      nodeSelector:
+        superedge.io/edge-node: enable
       containers:
         - name: tunnel-edge
-          image: superedge/tunnel:v0.1.0
+          image: superedge/tunnel:v0.3.0
           imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:
@@ -109,7 +111,7 @@ spec:
           resources:
             limits:
               cpu: 20m
-              memory: 20Mi
+              memory: 40Mi
             requests:
               cpu: 10m
               memory: 10Mi

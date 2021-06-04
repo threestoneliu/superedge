@@ -1,4 +1,4 @@
-
+---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -19,21 +19,21 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: tunnel-edge
-    namespace: kube-system
+    namespace: edge-system
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: tunnel-edge
-  namespace: kube-system
+  namespace: edge-system
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: tunnel-edge-conf
-  namespace: kube-system
+  namespace: edge-system
 data:
-  mode.toml: |
+  tunnel_edge.toml: |
     [mode]
         [mode.edge]
             [mode.edge.stream]
@@ -55,14 +55,14 @@ data:
 kind: Secret
 metadata:
   name: tunnel-edge-cert
-  namespace: kube-system
+  namespace: edge-system
 type: Opaque
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: tunnel-edge
-  namespace: kube-system
+  namespace: edge-system
 spec:
   selector:
     matchLabels:
@@ -75,7 +75,7 @@ spec:
       hostNetwork: true
       containers:
         - name: tunnel-edge
-          image: superedge/tunnel:v0.1.0
+          image: superedge/tunnel:v0.3.0
           imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:
@@ -89,7 +89,7 @@ spec:
           resources:
             limits:
               cpu: 20m
-              memory: 20Mi
+              memory: 40Mi
             requests:
               cpu: 10m
               memory: 10Mi
@@ -103,7 +103,7 @@ spec:
                   fieldPath: spec.nodeName
           args:
             - --m=edge
-            - --c=/etc/superedge/tunnel/conf/mode.toml
+            - --c=/etc/superedge/tunnel/conf/tunnel_edge.toml
             - --log-dir=/var/log/tunnel
             - --alsologtostderr
           volumeMounts:

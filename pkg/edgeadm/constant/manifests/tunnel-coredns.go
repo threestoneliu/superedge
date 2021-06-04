@@ -23,7 +23,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: tunnel-coredns
-  namespace: kube-system
+  namespace: {{.Namespace}}
 data:
   Corefile: |
     .:53 {
@@ -47,7 +47,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: tunnel-nodes
-  namespace: kube-system
+  namespace: {{.Namespace}}
 data:
   hosts: ""
 ---
@@ -55,7 +55,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tunnel-coredns
-  namespace: kube-system
+  namespace: {{.Namespace}}
 spec:
   ports:
     - name: dns
@@ -73,12 +73,13 @@ spec:
   selector:
     k8s-app: tunnel-coredns
   type: ClusterIP
+  clusterIP: {{.TunnelCoreDNSClusterIP}}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tunnel-coredns
-  namespace: kube-system
+  namespace: {{.Namespace}}
 spec:
   replicas: 1
   selector:
@@ -93,7 +94,7 @@ spec:
         - args:
             - -conf
             - /etc/coredns/Corefile
-          image: coredns/coredns:1.6.5
+          image: superedge.tencentcloudcr.com/superedge/coredns:1.6.5
           imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 5

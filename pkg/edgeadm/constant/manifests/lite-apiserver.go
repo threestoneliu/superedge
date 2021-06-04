@@ -16,7 +16,7 @@ limitations under the License.
 
 package manifests
 
-const APP_lITE_APISERVER = "lite-apiserver.yaml"
+const APP_LITE_APISERVER = "lite-apiserver.yaml"
 
 const LiteApiServerYaml = `
 apiVersion: v1
@@ -25,7 +25,7 @@ metadata:
   labels:
     k8s-app: lite-apiserver
   name: lite-apiserver
-  namespace: kube-system
+  namespace: {{.Namespace}}
 spec:
   containers:
     - command:
@@ -39,9 +39,8 @@ spec:
         - --tls-config-file=/etc/kubernetes/edge/tls.json
         - --v=4
         - --file-cache-path=/data/lite-apiserver/cache
-        - --sync-duration=120
         - --timeout=3
-      image: superedge/lite-apiserver:v0.1.0
+      image: superedge/lite-apiserver:v0.3.0
       imagePullPolicy: IfNotPresent
       name: lite-apiserver
       volumeMounts:
@@ -66,11 +65,11 @@ spec:
       name: cache
     - hostPath:
         path: /etc/kubernetes/pki
-        name: DirectoryOrCreate
+        type: DirectoryOrCreate
       name: k8s-certs
     - hostPath:
         path: /etc/kubernetes/edge
-        name: DirectoryOrCreate
+        type: DirectoryOrCreate
       name: edge-certs
 status: {}
 `

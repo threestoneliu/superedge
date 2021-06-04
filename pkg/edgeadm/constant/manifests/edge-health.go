@@ -23,7 +23,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: edge-health
-  namespace: kube-system
+  namespace: {{.Namespace}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -61,14 +61,14 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: edge-health
-    namespace: kube-system
+    namespace: {{.Namespace}}
 
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: edge-health
-  namespace: kube-system
+  namespace: {{.Namespace}}
 spec:
   selector:
     matchLabels:
@@ -81,7 +81,7 @@ spec:
       serviceAccountName: edge-health
       containers:
         - name: edge-health
-          image: superedge/edge-health:v0.1.0
+          image: superedge/edge-health:v0.3.0
           imagePullPolicy: IfNotPresent
           resources:
             limits: 
@@ -105,6 +105,8 @@ spec:
             procMount: Default
       dnsPolicy: ClusterFirst
       hostNetwork: true
+      nodeSelector:
+        superedge.io/edge-node: enable
       restartPolicy: Always
       securityContext: {}
       terminationGracePeriodSeconds: 30
@@ -113,7 +115,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: hmac-config
-  namespace: kube-system
+  namespace: {{.Namespace}}
 data:
   hmackey: {{.HmacKey}}
 `

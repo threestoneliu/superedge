@@ -23,7 +23,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: application-grid-wrapper
-  namespace: kube-system
+  namespace: {{.Namespace}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -74,7 +74,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: application-grid-wrapper
-    namespace: kube-system
+    namespace: {{.Namespace}}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -82,7 +82,7 @@ metadata:
   labels:
     app: application-grid-wrapper
   name: application-grid-wrapper
-  namespace: kube-system
+  namespace: {{.Namespace}}
 data:
   kubeconfig.conf: |
     apiVersion: v1
@@ -113,7 +113,7 @@ metadata:
     k8s-app: application-grid-wrapper-node
     addonmanager.kubernetes.io/mode: Reconcile
   name: application-grid-wrapper-node
-  namespace: kube-system
+  namespace: {{.Namespace}}
 spec:
   selector:
     matchLabels:
@@ -133,10 +133,11 @@ spec:
       hostNetwork: true
       restartPolicy: Always
       nodeSelector:
-        kubernetes.io/os: linux # TODO select edge node
+        kubernetes.io/os: linux 
+        superedge.io/edge-node: enable   # TODO select nodes labeled as edges
       containers:
         - name: application-grid-wrapper
-          image: superedge/application-grid-wrapper:v0.1.0
+          image: superedge/application-grid-wrapper:v0.3.0
           imagePullPolicy: IfNotPresent
           command:
             - /usr/local/bin/application-grid-wrapper
@@ -172,6 +173,36 @@ spec:
             type: Directory
           name: host-var-tmp
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: application-grid-wrapper-master
+  name: application-grid-wrapper-master
+  namespace: {{.Namespace}}
+data:
+  kubeconfig.conf: |
+    apiVersion: v1
+    clusters:
+    - cluster:
+        certificate-authority: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        server: {{.AdvertiseAddress}}
+      name: default
+    contexts:
+    - context:
+        cluster: default
+        namespace: default
+        user: default
+      name: default
+    current-context: default
+    kind: Config
+    preferences: {}
+    users:
+    - name: default
+      user:
+        tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -179,7 +210,7 @@ metadata:
     k8s-app: application-grid-wrapper-master
     addonmanager.kubernetes.io/mode: Reconcile
   name: application-grid-wrapper-master
-  namespace: kube-system
+  namespace: {{.Namespace}}
 spec:
   selector:
     matchLabels:
@@ -204,12 +235,16 @@ spec:
         - key: "node-role.kubernetes.io/master"
           operator: "Exists"
           effect: "NoSchedule"
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+        - operator: "Exists"
       containers:
         - name: application-grid-wrapper
-          image: superedge/application-grid-wrapper:v0.1.0
+          image: superedge/application-grid-wrapper:v0.3.0
           imagePullPolicy: IfNotPresent
           command:
             - /usr/local/bin/application-grid-wrapper
+            - --kubeconfig=/var/lib/application-grid-wrapper/kubeconfig.conf
             - --bind-address=127.0.0.1:51006
             - --hostname=$(NODE_NAME)
             - --wrapper-in-cluster=false
@@ -229,7 +264,14 @@ spec:
               memory: 20Mi
           securityContext:
             privileged: true
+          volumeMounts:
+            - mountPath: /var/lib/application-grid-wrapper
+              name: application-grid-wrapper-master
       volumes:
+        - configMap:
+            defaultMode: 420
+            name: application-grid-wrapper-master
+          name: application-grid-wrapper-master
         - hostPath:
             path: /var/tmp
             type: Directory

@@ -1,5 +1,5 @@
 GO := go
-GO_SUPPORTED_VERSIONS ?= 1.13|1.14|1.15
+GO_SUPPORTED_VERSIONS ?= 1.13|1.14|1.15|1.16
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitVersion=$(VERSION) \
 	-X $(VERSION_PACKAGE).gitBranch=$(GIT_BRANCH) \
 	-X $(VERSION_PACKAGE).gitCommit=$(GIT_COMMIT) \
@@ -60,7 +60,7 @@ go.clean:
 go.lint.verify: go.build.verify
 ifeq (,$(shell which golangci-lint))
 	@echo "===========> Installing golangci lint"
-	@GO111MODULE=off $(GO) get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	@curl -sSfL "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh" | sh -s -- -b $(go env GOPATH)/bin v1.40.1
 endif
 
 .PHONY: go.lint
